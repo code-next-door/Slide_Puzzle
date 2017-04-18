@@ -230,17 +230,6 @@ def getSpotClicked(board, x, y):
     return (None, None)
 
 
-def drawTile1(tilex, tiley, number, adjx=0, adjy=0):
-    # draw a tile at board coordinates tilex and tiley, optionally a few
-    # pixels over (determined by adjx and adjy)
-    left, top = getLeftTopOfTile(tilex, tiley)
-    pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
-    textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
-    textRect = textSurf.get_rect()
-    textRect.center = left + int(TILESIZE / 2) + adjx, top + int(TILESIZE / 2) + adjy
-    DISPLAYSURF.blit(textSurf, textRect)
-
-
 def drawTile(tilex, tiley, number, adjx=0, adjy=0):
     # draw a tile at board coordinates tilex and tiley, optionally a few
     # pixels over (determined by adjx and adjy)
@@ -250,10 +239,6 @@ def drawTile(tilex, tiley, number, adjx=0, adjy=0):
     imgRect = imge.get_rect()
     imgRect.topleft = (left + adjx, top + adjy)
     DISPLAYSURF.blit(imge, imgRect)
-    '''textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
-    textRect = textSurf.get_rect()
-    textRect.center = left + int(TILESIZE / 2) + adjx, top + int(TILESIZE / 2) + adjy
-    DISPLAYSURF.blit(textSurf, textRect)'''
 
 
 def makeText(text, color, bgcolor, top, left):
@@ -449,6 +434,32 @@ def difficultyScreen():
 
 
 def puzzleChoice():
+    gap = WINDOWWIDTH / 12
+    space = WINDOWHEIGHT / 8
+    width = WINDOWWIDTH / 3
+    height = WINDOWHEIGHT / 3
+    allImage = []
+    image = pygame.image.load('1.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+    image = pygame.image.load('2.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+    image = pygame.image.load('3.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+    image = pygame.image.load('4.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+    image = pygame.image.load('5.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+    image = pygame.image.load('6.jpg').convert()
+    image = pygame.transform.scale(image, (width, height))
+    allImage.append(image)
+
+    DISPLAYSURF.blit()
+
     return 1
 
 if __name__ == '__main__':
