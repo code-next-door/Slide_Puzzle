@@ -1,11 +1,13 @@
-import pygame, sys, random, os
-from pygame.locals import *
-from PIL import Image
+import random
+import sys
+
 import Image
+import pygame
+from pygame.locals import *
 
 # Create the constants (go ahead and experiment with different values)
 BOARDWIDTH = 4  # number of columns in the board
-BOARDHEIGHT = 4 # number of rows in the board
+BOARDHEIGHT = 4  # number of rows in the board
 TILESIZE = 80
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
@@ -54,6 +56,7 @@ def main():
     SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
 
     startingScreen()  # initial startup screen
+    puzzle = puzzleChoice()
     BOARDWIDTH = BOARDHEIGHT = chooseScreen()  # returns the size of the board chosen
 
     img = []  # list to store cropped images
@@ -444,6 +447,9 @@ def difficultyScreen():
                 elif hardRect.collidepoint(mouseX, mouseY):
                     return 40
 
+
+def puzzleChoice():
+    return 1
 
 if __name__ == '__main__':
     main()
