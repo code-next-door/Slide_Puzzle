@@ -1,5 +1,7 @@
-import pygame, sys, random
+import pygame, sys, random, os
 from pygame.locals import *
+from PIL import Image
+import Image
 
 # Create the constants (go ahead and experiment with different values)
 BOARDWIDTH = 4  # number of columns in the board
@@ -38,7 +40,7 @@ RIGHT = 'right'
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, \
-    BOARDWIDTH, BOARDHEIGHT
+    BOARDWIDTH, BOARDHEIGHT, img
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -51,8 +53,23 @@ def main():
     NEW_SURF,   NEW_RECT   = makeText('New Game', TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
     SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
 
-    startingScreen()
-    BOARDWIDTH = BOARDHEIGHT = chooseScreen()
+    startingScreen()  # initial startup screen
+    BOARDWIDTH = BOARDHEIGHT = chooseScreen()  # returns the size of the board chosen
+
+    img = []  # list to store cropped images
+    im = Image.open('DSC_0404.jpg')  # opens the selected image using PIL library
+    im = im.resize((TILESIZE * BOARDWIDTH, TILESIZE * BOARDWIDTH), Image.ANTIALIAS)
+    imgwidth, imgheight = im.size
+
+    # looping to get the cropped images from the original image
+    for i in range(0, imgheight, TILESIZE):
+        for j in range(0, imgwidth, TILESIZE):
+            box = (j, i, j + TILESIZE, i + TILESIZE)
+            a = im.crop(box)
+            a.save('temp.jpg')  # cropped image is saved temporarily
+            image = pygame.image.load('temp.jpg').convert()
+            img.append(image)
+
     mainBoard, solutionSeq = generateNewPuzzle(difficultyScreen())
     SOLVEDBOARD = getStartingBoard() # a solved board is the same as the board in a start state.
     allMoves = [] # list of moves made from the solved configuration
@@ -210,7 +227,7 @@ def getSpotClicked(board, x, y):
     return (None, None)
 
 
-def drawTile(tilex, tiley, number, adjx=0, adjy=0):
+def drawTile1(tilex, tiley, number, adjx=0, adjy=0):
     # draw a tile at board coordinates tilex and tiley, optionally a few
     # pixels over (determined by adjx and adjy)
     left, top = getLeftTopOfTile(tilex, tiley)
@@ -219,6 +236,21 @@ def drawTile(tilex, tiley, number, adjx=0, adjy=0):
     textRect = textSurf.get_rect()
     textRect.center = left + int(TILESIZE / 2) + adjx, top + int(TILESIZE / 2) + adjy
     DISPLAYSURF.blit(textSurf, textRect)
+
+
+def drawTile(tilex, tiley, number, adjx=0, adjy=0):
+    # draw a tile at board coordinates tilex and tiley, optionally a few
+    # pixels over (determined by adjx and adjy)
+    left, top = getLeftTopOfTile(tilex, tiley)
+    imge = img[number - 1]
+
+    imgRect = imge.get_rect()
+    imgRect.topleft = (left + adjx, top + adjy)
+    DISPLAYSURF.blit(imge, imgRect)
+    '''textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
+    textRect = textSurf.get_rect()
+    textRect.center = left + int(TILESIZE / 2) + adjx, top + int(TILESIZE / 2) + adjy
+    DISPLAYSURF.blit(textSurf, textRect)'''
 
 
 def makeText(text, color, bgcolor, top, left):
