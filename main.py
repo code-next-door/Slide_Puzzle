@@ -1,13 +1,27 @@
 import random
 import sys
+import threading
 
 import Image
 import pygame
 from pygame.locals import *
 
+
+class MyThread(threading.Thread):
+    def __init__(self, thread_id):
+        threading.Thread.__init__(self)
+        self.id = thread_id
+
+    def run(self):
+        if self.id == 1:
+            startingScreen()
+        else:
+            puzzleLoad()
+
+
 # Create the constants (go ahead and experiment with different values)
-BOARDWIDTH = 4  # number of columns in the board
-BOARDHEIGHT = 4  # number of rows in the board
+BOARDWIDTH = 0  # number of columns in the board
+BOARDHEIGHT = 0  # number of rows in the board
 TILESIZE = 80
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
@@ -42,7 +56,7 @@ RIGHT = 'right'
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, \
-    BOARDWIDTH, BOARDHEIGHT, img
+        BOARDWIDTH, BOARDHEIGHT, img, TILESIZE, XMARGIN, YMARGIN, BASICFONTSIZE, pic
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -51,16 +65,30 @@ def main():
     BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
 
     # Store the option buttons and their rectangles in OPTIONS.
-    RESET_SURF, RESET_RECT = makeText('Reset',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 90)
-    NEW_SURF,   NEW_RECT   = makeText('New Game', TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
-    SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
+    RESET_SURF, RESET_RECT = makeText('Reset', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 90)
+    NEW_SURF, NEW_RECT = makeText('New Game', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
+    SOLVE_SURF, SOLVE_RECT = makeText('Solve', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
 
-    startingScreen()  # initial startup screen
-    puzzle = puzzleChoice()
+    t1 = MyThread(1)  # Thread to start the starting screen
+    t2 = MyThread(2)  # Thread to start the loading of images for choices
+    t1.start()
+    t2.start()
+
+    t1.join()
+    t2.join()
+
+    puzzle = puzzleChoiceScreen()
     BOARDWIDTH = BOARDHEIGHT = chooseScreen()  # returns the size of the board chosen
 
+    XMARGIN = int(WINDOWWIDTH / 10)
+    YMARGIN = int(2 * WINDOWHEIGHT / 10)
+
+    TILESIZE = int((WINDOWHEIGHT - 2 * YMARGIN) / BOARDHEIGHT)
+    BASICFONTSIZE = int(WINDOWHEIGHT / 20)
+
     img = []  # list to store cropped images
-    im = Image.open('DSC_0404.jpg')  # opens the selected image using PIL library
+    im = Image.open(str(puzzle) + '.jpg')  # opens the selected image using PIL library
+    pic = pygame.image.load(str(puzzle) + '.jpg')
     im = im.resize((TILESIZE * BOARDWIDTH, TILESIZE * BOARDWIDTH), Image.ANTIALIAS)
     imgwidth, imgheight = im.size
 
@@ -74,10 +102,11 @@ def main():
             img.append(image)
 
     mainBoard, solutionSeq = generateNewPuzzle(difficultyScreen())
-    SOLVEDBOARD = getStartingBoard() # a solved board is the same as the board in a start state.
-    allMoves = [] # list of moves made from the solved configuration
+    SOLVEDBOARD = getStartingBoard()  # a solved board is the same as the board in a start state.
+    allMoves = []  # list of moves made from the solved configuration
 
     while True:  # main game loop
+
         slideTo = None  # the direction, if any, a tile should slide
         msg = 'Click tile or press arrow keys to slide.'  # contains the message to show in the upper left corner.
         if mainBoard == SOLVEDBOARD:
@@ -96,7 +125,7 @@ def main():
                         resetAnimation(mainBoard, allMoves) # clicked on Reset button
                         allMoves = []
                     elif NEW_RECT.collidepoint(event.pos):
-                        mainBoard, solutionSeq = generateNewPuzzle(80) # clicked on New Game button
+                        mainBoard, solutionSeq = generateNewPuzzle(difficultyScreen())  # clicked on New Game button
                         allMoves = []
                     elif SOLVE_RECT.collidepoint(event.pos):
                         resetAnimation(mainBoard, solutionSeq + allMoves) # clicked on Solve button
@@ -113,17 +142,6 @@ def main():
                         slideTo = UP
                     elif spotx == blankx and spoty == blanky - 1:
                         slideTo = DOWN
-
-            elif event.type == KEYUP:
-                # check if the user pressed a key to slide a tile
-                if event.key in (K_LEFT, K_a) and isValidMove(mainBoard, LEFT):
-                    slideTo = LEFT
-                elif event.key in (pygame.K_RIGHT, K_d) and isValidMove(mainBoard, RIGHT):
-                    slideTo = RIGHT
-                elif event.key in (K_UP, K_w) and isValidMove(mainBoard, UP):
-                    slideTo = UP
-                elif event.key in (K_DOWN, K_s) and isValidMove(mainBoard, DOWN):
-                    slideTo = DOWN
 
         if slideTo:
             slideAnimation(mainBoard, slideTo, 'Click tile or press arrow keys to slide.', 8) # show slide on screen
@@ -250,7 +268,10 @@ def makeText(text, color, bgcolor, top, left):
 
 
 def drawBoard(board, message):
+
     DISPLAYSURF.fill(BGCOLOR)
+
+    drawFinalPic(pic)
     if message:
         textSurf, textRect = makeText(message, MESSAGECOLOR, BGCOLOR, 5, 5)
         DISPLAYSURF.blit(textSurf, textRect)
@@ -268,6 +289,13 @@ def drawBoard(board, message):
     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
+
+
+def drawFinalPic(pic):
+    pic = pygame.transform.scale(pic, (3 * WINDOWWIDTH / 10, 3 * WINDOWHEIGHT / 10))
+    picRect = pic.get_rect()
+    picRect.topleft = (2 * XMARGIN + BOARDWIDTH * TILESIZE, YMARGIN)
+    DISPLAYSURF.blit(pic, picRect)
 
 
 def slideAnimation(board, direction, message, animationSpeed):
@@ -382,7 +410,7 @@ def chooseScreen():
 def startingScreen():
 
     FPS = 2
-    colors = [WHITE, RED, GREEN, BLACK, BRIGHTBLUE, WHITE]
+    colors = [WHITE, RED, GREEN, BLACK, BRIGHTBLUE, WHITE, RED, GREEN, BLACK, BRIGHTBLUE]
     DISPLAYSURF.fill(BGCOLOR)
     TITLEFONT = pygame.font.Font('comic.ttf', 40)
 
@@ -433,11 +461,10 @@ def difficultyScreen():
                     return 40
 
 
-def puzzleChoice():
-    gap = WINDOWWIDTH / 12
-    space = WINDOWHEIGHT / 8
-    width = WINDOWWIDTH / 3
-    height = WINDOWHEIGHT / 3
+def puzzleLoad():
+    global allImage
+    width = 6 * WINDOWWIDTH / 22
+    height = 6 * WINDOWHEIGHT / 15
     allImage = []
     image = pygame.image.load('1.jpg').convert()
     image = pygame.transform.scale(image, (width, height))
@@ -458,9 +485,60 @@ def puzzleChoice():
     image = pygame.transform.scale(image, (width, height))
     allImage.append(image)
 
-    DISPLAYSURF.blit()
 
-    return 1
+def isColliding(coords, width, height, x, y):
+    for i in range(6):
+        pRect = pygame.Rect(coords[i], (width, height))
+        if pRect.collidepoint(x, y):
+            return i + 1
+    return None
+
+
+def puzzleChoiceScreen():
+    DISPLAYSURF.fill(BGCOLOR)
+    width_gap = int(WINDOWWIDTH / 22)
+    height_gap = int(WINDOWHEIGHT / 15)
+    width = int(6 * WINDOWWIDTH / 22)
+    height = int(6 * WINDOWHEIGHT / 15)
+    x = width_gap
+    y = height_gap
+    coords = []
+    while True:
+        for i in range(3):
+            imageRect = allImage[i].get_rect()
+            imageRect.topleft = (x, y)
+            coords.append((x, y))
+            DISPLAYSURF.blit(allImage[i], imageRect)
+            x += (width_gap + width)
+
+        x = width_gap
+        y = 2 * height_gap + height
+        for i in range(3, 6):
+            imageRect = allImage[i].get_rect()
+            imageRect.topleft = (x, y)
+            coords.append((x, y))
+            DISPLAYSURF.blit(allImage[i], imageRect)
+            x += (width_gap + width)
+
+        checkForQuit()
+        for ev in pygame.event.get():
+            if ev.type == MOUSEBUTTONUP:
+                x, y = pygame.mouse.get_pos()
+                puzzle = isColliding(coords, width, height, x, y)
+                if puzzle == 1:
+                    return 1
+                elif puzzle == 2:
+                    return 2
+                elif puzzle == 3:
+                    return 3
+                elif puzzle == 4:
+                    return 4
+                elif puzzle == 5:
+                    return 5
+                elif puzzle == 6:
+                    return 6
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
 
 if __name__ == '__main__':
     main()
