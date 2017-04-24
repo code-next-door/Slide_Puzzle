@@ -132,7 +132,6 @@ def main():
                         allMoves = []
                 else:
                     # check if the clicked tile was next to the blank spot
-
                     blankx, blanky = getBlankPosition(mainBoard)
                     if spotx == blankx + 1 and spoty == blanky:
                         slideTo = LEFT
