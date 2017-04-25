@@ -3,20 +3,15 @@ import sys
 import threading
 
 import pygame
-from PIL import Image
 from pygame.locals import *
 
 
 class MyThread(threading.Thread):
-    def __init__(self, thread_id):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.id = thread_id
 
     def run(self):
-        if self.id == 1:
-            startingScreen()
-        else:
-            puzzleLoad()
+        puzzleLoad()
 
 
 # Create the constants (go ahead and experiment with different values)
@@ -25,7 +20,7 @@ BOARDHEIGHT = 0  # number of rows in the board
 TILESIZE = 80
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
-FPS = 30
+FPS = 120
 BLANK = None
 
 #                 R    G    B
@@ -56,50 +51,46 @@ RIGHT = 'right'
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, \
-        BOARDWIDTH, BOARDHEIGHT, img, TILESIZE, XMARGIN, YMARGIN, BASICFONTSIZE, pic
+        BOARDWIDTH, BOARDHEIGHT, img, TILESIZE, XMARGIN, YMARGIN, BASICFONTSIZE, pic, WINDOWHEIGHT, WINDOWWIDTH
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
+    WINDOWWIDTH = pygame.display.Info().current_w
+    WINDOWHEIGHT = pygame.display.Info().current_h
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
     pygame.display.set_caption('Slide Puzzle')
-    BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
-
-    # Store the option buttons and their rectangles in OPTIONS.
-    RESET_SURF, RESET_RECT = makeText('Reset', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 90)
-    NEW_SURF, NEW_RECT = makeText('New Game', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
-    SOLVE_SURF, SOLVE_RECT = makeText('Solve', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
-
-    t1 = MyThread(1)  # Thread to start the starting screen
-    t2 = MyThread(2)  # Thread to start the loading of images for choices
-    t1.start()
-    t2.start()
-
-    t1.join()
-    t2.join()
-
-    puzzle = puzzleChoiceScreen()
-    BOARDWIDTH = BOARDHEIGHT = chooseScreen()  # returns the size of the board chosen
-
     XMARGIN = int(WINDOWWIDTH / 10)
     YMARGIN = int(2 * WINDOWHEIGHT / 10)
 
-    TILESIZE = int((WINDOWHEIGHT - 2 * YMARGIN) / BOARDHEIGHT)
     BASICFONTSIZE = int(WINDOWHEIGHT / 20)
+    BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
+
+    # Store the option buttons and their rectangles in OPTIONS.
+    RESET_SURF, RESET_RECT = makeText('Reset', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 5 * BASICFONTSIZE)
+    NEW_SURF, NEW_RECT = makeText('New Game', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 3 * BASICFONTSIZE)
+    SOLVE_SURF, SOLVE_RECT = makeText('Solve', TEXTCOLOR, BGCOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - BASICFONTSIZE)
+
+    RESET_RECT.topleft = (WINDOWWIDTH - NEW_SURF.get_width(), WINDOWHEIGHT - 6 * BASICFONTSIZE)
+    NEW_RECT.topleft = (WINDOWWIDTH - NEW_SURF.get_width(), WINDOWHEIGHT - 4 * BASICFONTSIZE)
+    SOLVE_RECT.topleft = (WINDOWWIDTH - NEW_SURF.get_width(), WINDOWHEIGHT - 2 * BASICFONTSIZE)
+
+    startingScreen()
+    puzzle = puzzleChoiceScreen()
+    BOARDWIDTH = BOARDHEIGHT = chooseScreen()  # returns the size of the board chosen
+
+    TILESIZE = int((WINDOWHEIGHT - 2 * YMARGIN) / BOARDHEIGHT)
 
     img = []  # list to store cropped images
-    im = Image.open(str(puzzle) + '.jpg')  # opens the selected image using PIL library
-    pic = pygame.image.load(str(puzzle) + '.jpg')
-    im = im.resize((TILESIZE * BOARDWIDTH, TILESIZE * BOARDWIDTH), Image.ANTIALIAS)
-    imgwidth, imgheight = im.size
+    pic = pygame.image.load(str(puzzle) + '.jpg').convert()
+    pic = pygame.transform.scale(pic, (TILESIZE * BOARDWIDTH, TILESIZE * BOARDWIDTH))
+    imgwidth, imgheight = pic.get_rect().size
 
     # looping to get the cropped images from the original image
     for i in range(0, imgheight, TILESIZE):
         for j in range(0, imgwidth, TILESIZE):
-            box = (j, i, j + TILESIZE, i + TILESIZE)
-            a = im.crop(box)
-            a.save('temp.jpg')  # cropped image is saved temporarily
-            image = pygame.image.load('temp.jpg').convert()
-            img.append(image)
+            box = (j, i, TILESIZE, TILESIZE)
+            a = pic.subsurface(box)
+            img.append(a)
 
     mainBoard, solutionSeq = generateNewPuzzle(difficultyScreen())
     SOLVEDBOARD = getStartingBoard()  # a solved board is the same as the board in a start state.
@@ -156,12 +147,10 @@ def terminate():
 
 
 def checkForQuit():
-    for event in pygame.event.get(QUIT): # get all the QUIT events
+    for e in pygame.event.get(QUIT):  # get all the QUIT events
         terminate() # terminate if any QUIT events are present
-    for event in pygame.event.get(KEYUP): # get all the KEYUP events
-        if event.key == K_ESCAPE:
-            terminate() # terminate if the KEYUP event was for the Esc key
-        pygame.event.post(event) # put the other KEYUP event objects back
+    for ev in pygame.event.get(KEYDOWN):  # get all the KEYUP events
+        terminate()  # terminate if the KEYUP event was for the Esc key
 
 
 def getStartingBoard():
@@ -411,7 +400,9 @@ def startingScreen():
     FPS = 2
     colors = [WHITE, RED, GREEN, BLACK, BRIGHTBLUE, WHITE, RED, GREEN, BLACK, BRIGHTBLUE]
     DISPLAYSURF.fill(BGCOLOR)
-    TITLEFONT = pygame.font.Font('comic.ttf', 40)
+    TITLEFONT = pygame.font.Font('comic.ttf', int(WINDOWHEIGHT / 10))
+    t = MyThread()
+    t.start()
 
     for color in colors:
         titleText = TITLEFONT.render('SLIDE PUZZLE', True, color)
@@ -420,6 +411,8 @@ def startingScreen():
         DISPLAYSURF.blit(titleText, titleRect)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
+
+    t.join()
 
 
 def difficultyScreen():
