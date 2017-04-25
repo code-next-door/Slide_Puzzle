@@ -2,8 +2,8 @@ import random
 import sys
 import threading
 
-import Image
 import pygame
+from PIL import Image
 from pygame.locals import *
 
 

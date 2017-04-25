@@ -1,0 +1,20 @@
+{
+  "layout": "internal",
+  "orientation": "sensorLandscape",
+  "package": "com.kashish",
+  "google_play_key": null,
+  "include_pil": true,
+  "expansion": false,
+  "name": "Slide Puzzle",
+  "source": true,
+  "icon_name": "Slide Puzzle",
+  "version": "1.0",
+  "store": "none",
+  "target_version": 14,
+  "permissions": [
+    "VIBRATE"
+  ],
+  "include_sqlite": false,
+  "google_play_salt": null,
+  "numeric_version": "1"
+}
